@@ -27,7 +27,7 @@ class VisualOdometry(object):
         self.index = 0
 
         # keypoints and descriptors
-        self.kptdescs = {}
+        self.kptdescs = {"pairs": []}
 
         # pose of current frame
         self.cur_R = None
@@ -58,17 +58,21 @@ class VisualOdometry(object):
             matches = self.matcher(self.kptdescs)
 
             # compute relative R,t between ref and cur frame
-            E, mask = cv2.findEssentialMat(matches['cur_keypoints'], matches['ref_keypoints'],
+            E, mask0 = cv2.findEssentialMat(matches['cur_keypoints'], matches['ref_keypoints'],
                                            focal=self.focal, pp=self.pp,
                                            method=cv2.RANSAC, prob=0.999, threshold=1.0)
-            _, R, t, mask = cv2.recoverPose(E, matches['cur_keypoints'], matches['ref_keypoints'],
+            _, R, t, mask1 = cv2.recoverPose(E, matches['cur_keypoints'], matches['ref_keypoints'],
                                             focal=self.focal, pp=self.pp)
-
+            mask = (mask1[:, 0]>0)&(mask0[:, 0]>0)
             # get absolute pose based on absolute_scale
             if (absolute_scale > 0.1):
                 self.cur_t = self.cur_t + absolute_scale * self.cur_R.dot(t)
                 self.cur_R = R.dot(self.cur_R)
-
+            self.kptdescs["pairs"].append({
+                "match0": matches['ref_keypoints'][mask],
+                "match1": matches['cur_keypoints'][mask],
+                "score": matches["match_score"][mask]
+            })
         self.kptdescs["ref"] = self.kptdescs["cur"]
 
         self.index += 1

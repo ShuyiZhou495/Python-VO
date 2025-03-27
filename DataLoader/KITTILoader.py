@@ -45,8 +45,7 @@ class KITTILoader(object):
 
         # image id
         self.img_id = self.config["start"]
-        self.img_N = len(glob.glob(pathname=self.config["root_path"] + "/sequences/" \
-                                            + self.config["sequence"] + "/image_0/*.png"))
+        self.img_N = 50
 
     def get_cur_pose(self):
         return self.gt_poses[self.img_id - 1]
